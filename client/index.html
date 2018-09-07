@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+  <meta charset="utf-8">
+  <title></title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" crossorigin="anonymous">
+  <link rel="stylesheet" href="./style/style.css">
+  <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+    crossorigin="anonymous"></script>
+</head>
+
+<body>
+  <script>
+    window.fbAsyncInit = function () {
+      FB.init({
+        appId: '270489340449974',
+        autoLogAppEvents: true,
+        xfbml: true,
+        version: 'v3.1'
+      });
+    };
+
+    (function (d, s, id) {
+      var js, fjs = d.getElementsByTagName(s)[0];
+      if (d.getElementById(id)) { return; }
+      js = d.createElement(s); js.id = id;
+      js.src = "https://connect.facebook.net/en_US/sdk.js";
+      fjs.parentNode.insertBefore(js, fjs);
+    }(document, 'script', 'facebook-jssdk'));
+
+    function checkLoginState() {
+      FB.getLoginStatus(function (response) {
+        console.log(response);
+        if (response !== undefined || response !== null) {
+          $.ajax({
+            url: `http://localhost:3000/github/login-fb`,
+            method: "POST",
+            data: {
+              token: response.authResponse.accessToken
+            }
+          })
+            .done((response) => {
+              console.log('mashooq pa eqo')
+              localStorage.setItem('token', response.token);
+
+            })
+            .fail(() => {
+              console.log('fail requesting');
+            });
+        }
+      });
+    }
+
+
+  </script>
+
+  <div class="container">
+    <div class="row">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="#">HacktivGit</a>
+          <div class="navbar-right">
+            <img src="https://via.placeholder.com/50x50" />
+            <fb:login-button scope="public_profile,email" onlogin="checkLoginState();">
+            </fb:login-button>
+          </div>
+        </div>
+      </nav>
+    </div>
+
+    <div class="row row-body ">
+      <div class="col-md-3 box">
+        <h4>Users</h4>
+        <ul style="list-style-type:none">
+          <li onclick="showRepo('windiana')">windiana</li>
+          <li onclick="showRepo('rizafahmi')">rizafahmi</li>
+          <li onclick="showRepo('rhamadiansyah')">rhamadiansyah</li>
+        </ul>
+      </div>
+      <div class="col-md-3 box">
+        <input class="search" type="text" placeholder="Search..."></input>
+        <input type="submit" id="submit">
+
+        <div class="list">
+
+
+
+        </div>
+      </div>
+      <div class="col-md-6 box" id="container-repo">
+
+
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    $.ajax({
+      url: `http://localhost:3000/github/`,
+      method: "GET"
+    })
+      .done((users) => {
+        console.log(users);
+        $.each(users.result, function (i) {
+          $(".list").append(
+            `
+            <div class="card-body">
+            <h5 class="card-title">
+              <a href="#" onclick="detail('${ users.result[i].name}','${users.result[i].description}','${users.result[i].owner.login}')">${users.result[i].name}</a>
+            </h5>
+            <p class="card-text">${users.result[i].description}</p>
+            <p class="card-text">${users.result[i].stargazers_count} Star</p>
+          </div>
+`
+          )
+        });
+      })
+      .fail(err => {
+        console.log(err);
+      })
+
+    $('#submit').click(function () {
+      const data = $('.search').val();
+      console.log(data);
+
+      $.ajax({
+        url: `http://localhost:3000/github/search/?name=${data}`,
+        method: "GET"
+      })
+        .done(users => {
+          console.log(users);
+          $(".list").text("");
+          $.each(users.result, function (i) {
+            $(".list").append(
+              `
+            <div class="card-body">
+            <h5 class="card-title">
+              <a href="#" onclick="detail('${ users.result[i].name}','${users.result[i].description}','${users.result[i].owner.login}')">${users.result[i].name}</a>
+            </h5>
+            <p class="card-text">${users.result[i].description}</p>
+            <p class="card-text">${users.result[i].stargazers_count} Star</p>
+          </div>
+`
+            )
+          });
+        })
+        .fail(err => {
+          console.log(err);
+        })
+    });
+
+    function detail(name, description, username) {
+      console.log(name, description, username);
+      $('#container-repo').text('');
+      $('#container-repo').append(`
+      <h1>${name}</h1>
+
+      <p class="lead">
+        by
+        <a href="#">${username}</a>
+      </p>
+
+      <hr>
+
+      <!-- Post Content -->
+      <p class="lead">${description}</p>
+      `)
+    }
+
+    function showRepo(username) {
+      $.ajax({
+        url: `http://localhost:3000/github/searchby/${username}`,
+        method: "GET"
+      })
+        .done((users) => {
+          console.log(users.listRepo[0].name);
+          $(".list").text("");
+
+          $.each(users.listRepo, function (i) {
+            $(".list").append(
+              `
+            <div class="card-body">
+            <h5 class="card-title">
+              <a href="#" onclick="detail('${ users.listRepo[i].name}','${users.listRepo[i].description}','${users.listRepo[i].owner.login}')">${users.listRepo[i].name}</a>
+            </h5>
+            <p class="card-text">${users.listRepo[i].description}</p>
+            <p class="card-text">${users.listRepo[i].stargazers_count} Star</p>
+          </div>
+`
+            )
+          });
+        })
+        .fail(err => {
+          console.log(err);
+        })
+    }
+  </script>
+</body>
+
+</html>
